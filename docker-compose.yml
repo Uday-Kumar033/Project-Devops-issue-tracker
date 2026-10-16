@@ -1,0 +1,64 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: issueflow-frontend
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: issueflow-backend
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: issueflow
+      DB_USER: issueflow
+      DB_PASSWORD: ${DB_PASSWORD:-local_dev_password}
+      DATABASE_URL: postgresql://issueflow:${DB_PASSWORD:-local_dev_password}@db:5432/issueflow
+    expose:
+      - "5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: issueflow-db
+    environment:
+      POSTGRES_DB: issueflow
+      POSTGRES_USER: issueflow
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-local_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - issueflow-db-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U issueflow -d issueflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-net
+
+volumes:
+  issueflow-db-data:
+
+networks:
+  app-net:
+    driver: bridge
