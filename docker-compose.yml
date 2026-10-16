@@ -5,6 +5,7 @@ services:
       args:
         VITE_API_URL: /api
     container_name: issueflow-frontend
+    image: mruday033/issue-tracker-frontend:latest
     ports:
       - "8080:80"
     networks:
@@ -17,6 +18,7 @@ services:
     build:
       context: ./backend
     container_name: issueflow-backend
+    image: mruday033/issue-tracker-backend:latest
     environment:
       NODE_ENV: production
       PORT: 5000
